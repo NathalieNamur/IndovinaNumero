@@ -1,11 +1,10 @@
-/**
- * Sample Skeleton for 'Scene.fxml' Controller Class
- */
-
 package it.polito.tdp.IndovinaNumero;
 
 import java.net.URL;
+import java.security.InvalidParameterException;
 import java.util.ResourceBundle;
+
+import it.polito.tdp.IndovinaNumero.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -14,102 +13,144 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 
 public class FXMLController {
-	
-	private int segreto;
-	private final int TMAX = 8;
-	private final int NMAX = 100;
-	private int tentativiFatti;
 
-    @FXML // ResourceBundle that was given to the FXMLLoader
+	/**ATTRIBUTO RIFERIMENTO MODEL:**/
+	private Model model; 
+	
+	
+    @FXML
     private ResourceBundle resources;
 
-    @FXML // URL location of the FXML file that was given to the FXMLLoader
+    @FXML
     private URL location;
 
-    @FXML // fx:id="btnNuovaPartita"
-    private Button btnNuovaPartita; // Value injected by FXMLLoader
+    @FXML
+    private HBox HBoxTentativo;
+
+    @FXML
+    private Button btnNuovaPartita;
+
+    @FXML
+    private Button btnProva;
+
+    @FXML
+    private TextArea txtRisultato;
+
+    @FXML
+    private TextField txtTentativiRimasti;
+
+    @FXML
+    private TextField txtTentativo;
+
     
-    @FXML // fx:id="hboxTentativi"
-    private HBox hboxTentativi; // Value injected by FXMLLoader
-
-
-    @FXML // fx:id="btnProva"
-    private Button btnProva; // Value injected by FXMLLoader
-
-    @FXML // fx:id="txtRisultato"
-    private TextArea txtRisultato; // Value injected by FXMLLoader
-
-    @FXML // fx:id="txtTentativi"
-    private TextField txtTentativi; // Value injected by FXMLLoader
-
-    @FXML // fx:id="txtTentativo"
-    private TextField txtTentativo; // Value injected by FXMLLoader
-
+    
     @FXML
     void doNuovaPartita(ActionEvent event) {
-    	//gestione di una nuova partita
-    	this.segreto = (int)((Math.random() * NMAX) +1);
-    	this.tentativiFatti = 0;
     	
-    	//gestione interfaccia
-    	txtTentativi.setText(Integer.toString(TMAX));
-    	hboxTentativi.setDisable(false);
-    	txtRisultato.clear();    	
+    	/**GESTIONE INTERFACCIA:**/
+    	
+    	HBoxTentativo.setDisable(false);
+    	txtTentativiRimasti.setText(Integer.toString(model.getTMAX()));
+    	txtTentativo.clear();
+    	txtRisultato.clear();
+    	
+    	
+    	/**GESTIONE NUOVA PARTITA (MODEL):**/
+    	
+    	model.nuovaPartita();
+
     }
 
+    
     @FXML
-    void doTentativo(ActionEvent event) {
-    	String ts = txtTentativo.getText();
-    	int tentativo;
+    void doProva(ActionEvent event) {
+    
+    	/**1.ACQUISIZIONE E CONTROLLO DATI:**/
     	
-    	//controllo 1 -> input numerico
+    	String t = txtTentativo.getText();
+    	int tentativo = Integer.parseInt(t); //*
+    	
+    	txtTentativiRimasti.setText(Integer.toString(model.getTMAX()-model.getTentativiEffettuati())); //*
+    	
+    	//*
+    	//Integer.parseInt(..String..) : trasforma una stringa in un intero.
+    	//Integer.toString(..int..) : trasforma un intero in una stringa.
+    	
+    	
+    	/*
+    	VOLENDO, E' POSSIBILE AGGIUNGERE UN CONTROLLO PER VERIFICARE CHE 
+    	IL GIOCATORE ABBIA EFFETTIVAMENTE INSERITO UN NUMERO.
+    	
+    	DI TALE CONTROLLO SI DEVE OCCUPARE IL Controller PERCHE' COSTITUISCE
+    	UN CONTROLLO DATI DELL'INTERFACCIA GRAFICA.
+    	 
     	try {
-    		tentativo = Integer.parseInt(ts);
-    	} catch (NumberFormatException e) {
-    		txtRisultato.setText("Devi inserire un tentativo numerico tra 1 e 100!");
+    	tentativo = Integer.parseInt(t);
+    	}
+    	catch (NumberFormatException e) {
+    		txtRisultato.setText("Devi inserire un tentativo numerico tra 1 e 100");
+    		return; 
+    	}
+    
+    	**/
+    	
+    	
+    	/**2.ESECUZIONE DELL'OPERAZIONE (MODEL).**/
+    	
+    	
+    	/**3.VISUALIZZAZIONE/AGGIORNAMENTO DEL RISULTATO:**/
+    	
+    	int risultato;
+    	
+    	try{
+    		risultato = model.provaTentativo(tentativo);
+    	}
+    	catch(InvalidParameterException ip) {
+    		txtRisultato.setText(ip.getMessage());
+    		return;
+    	}
+    	catch(IllegalStateException is) {
+    		txtRisultato.setText(is.getMessage());
+    		HBoxTentativo.setDisable(true);
     		return;
     	}
     	
-    	//controllo 2 -> intervallo numerico corretto
-    	if(tentativo < 1 || tentativo > NMAX) {
-    		txtRisultato.setText("Devi inserire un tentativo numerico tra 1 e 100!");
-    		return;
+    	if(risultato == 0) {
+			txtRisultato.clear();
+			txtRisultato.appendText("Hai indovinato!! \nIl numero segreto era: "+model.getNumeroSegreto());
+			HBoxTentativo.setDisable(true);	
+		}
+    	else if(risultato == -1) {
+    		txtRisultato.clear();
+    		txtRisultato.setText("Tentativo troppo basso.");
+    	}
+    	else {
+    		txtRisultato.clear();
+    		txtRisultato.setText("Tentativo troppo alto.");
     	}
     	
-    	this.tentativiFatti ++;
-    	
-    	if(tentativo == this.segreto) {
-    		//HAI VINTO
-    		txtRisultato.setText("HAI INDOVINATO CON " + this.tentativiFatti + " TENTATIVI");
-    		hboxTentativi.setDisable(true);
-    		return;
-    	}
-    	
-    	if(this.tentativiFatti == TMAX) {
-    		//esaurito i tentativi -> HAI PERSO
-    		txtRisultato.setText("HAI PERSO! IL SEGRETO ERA: " + this.segreto);
-    		hboxTentativi.setDisable(true);
-    		return;
-    	}
-    	
-    	if(tentativo < this.segreto) {
-    		txtRisultato.setText("Tentativo Troppo Basso!");
-    	} else {
-    		txtRisultato.setText("Tentativo Troppo Alto!");
-    	}
-    	
-    	txtTentativi.setText(Integer.toString(TMAX-tentativiFatti));
-    	
+    	//NB:
+   		//Al posto dei blocchi if-else, 
+    	//è possibile utilizzare dei blocchi separati if(){ ... return;}.
+    		
     }
 
-    @FXML // This method is called by the FXMLLoader when initialization is complete
+    
+    /**METODO setModel() PER ASSOCIARE IL MODEL ALL'ATTRIBUTO DI RIFERIMENTO:**/
+    public void setModel(Model m) {
+    	this.model = m; 
+    }
+    
+    
+    
+    @FXML
     void initialize() {
+        assert HBoxTentativo != null : "fx:id=\"HBoxTentativo\" was not injected: check your FXML file 'Scene.fxml'.";
         assert btnNuovaPartita != null : "fx:id=\"btnNuovaPartita\" was not injected: check your FXML file 'Scene.fxml'.";
         assert btnProva != null : "fx:id=\"btnProva\" was not injected: check your FXML file 'Scene.fxml'.";
         assert txtRisultato != null : "fx:id=\"txtRisultato\" was not injected: check your FXML file 'Scene.fxml'.";
-        assert txtTentativi != null : "fx:id=\"txtTentativi\" was not injected: check your FXML file 'Scene.fxml'.";
+        assert txtTentativiRimasti != null : "fx:id=\"txtTentativiRimasti\" was not injected: check your FXML file 'Scene.fxml'.";
         assert txtTentativo != null : "fx:id=\"txtTentativo\" was not injected: check your FXML file 'Scene.fxml'.";
-
     }
 
 }
